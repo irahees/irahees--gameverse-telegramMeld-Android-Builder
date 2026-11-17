@@ -1,0 +1,49 @@
+name: Build Meld APK
+
+on:
+  push:
+    paths:
+      - 'Meld-Android-Source-BuildReady.zip'
+      - '.github/workflows/build-meld-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Extract Meld source
+        run: |
+          test -f Meld-Android-Source-BuildReady.zip
+          mkdir source
+          unzip -q Meld-Android-Source-BuildReady.zip -d source
+          chmod +x source/gradlew
+
+      - name: Build debug APK
+        working-directory: source
+        env:
+          METROLIST_APPLICATION_ID: com.meld.app
+          METROLIST_APP_NAME: Meld
+        run: ./gradlew --no-daemon assembleFossDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Meld-Android-APK
+          path: source/app/build/outputs/apk/foss/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
