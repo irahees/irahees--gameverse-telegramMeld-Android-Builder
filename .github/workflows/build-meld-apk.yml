@@ -35,9 +35,7 @@ jobs:
           packages: platform-tools
 
       - name: Install Android 17 SDK
-        run: |
-          sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
-          ls -la "$ANDROID_HOME/platforms"
+        run: sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
 
       - name: Configure API 37 minor level
         working-directory: source
@@ -56,6 +54,17 @@ jobs:
               raise SystemExit("Expected compileSdk = 37 declaration was not found")
           p.write_text(s.replace(old, new, 1))
           PY
+
+      - name: Generate CI debug signing key
+        run: |
+          mkdir -p "$HOME/.android"
+          keytool -genkeypair -v \
+            -keystore "$HOME/.android/debug.keystore" \
+            -storepass android \
+            -alias androiddebugkey \
+            -keypass android \
+            -dname "CN=Android Debug,O=Android,C=US" \
+            -keyalg RSA -keysize 2048 -validity 10000
 
       - name: Build debug APK
         working-directory: source
