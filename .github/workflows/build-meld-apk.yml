@@ -34,8 +34,28 @@ jobs:
         with:
           packages: platform-tools
 
-      - name: Install Android SDK 36
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Install Android 17 SDK
+        run: |
+          sdkmanager "platforms;android-37.0" "build-tools;37.0.0"
+          ls -la "$ANDROID_HOME/platforms"
+
+      - name: Configure API 37 minor level
+        working-directory: source
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("app/build.gradle.kts")
+          s = p.read_text()
+          old = "    compileSdk = 37"
+          new = """    compileSdk {
+                  version = release(37) {
+                      minorApiLevel = 0
+                  }
+              }"""
+          if old not in s:
+              raise SystemExit("Expected compileSdk = 37 declaration was not found")
+          p.write_text(s.replace(old, new, 1))
+          PY
 
       - name: Build debug APK
         working-directory: source
@@ -43,7 +63,6 @@ jobs:
           METROLIST_APPLICATION_ID: com.meld.app
           METROLIST_APP_NAME: Meld
         run: |
-          sed -i 's/compileSdk = 37/compileSdk = 36/' app/build.gradle.kts
           chmod +x gradlew
           ./gradlew --no-daemon assembleFossDebug
 
